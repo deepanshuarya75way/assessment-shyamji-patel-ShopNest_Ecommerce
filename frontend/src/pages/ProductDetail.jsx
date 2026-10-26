@@ -11,7 +11,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
 
   const dispatch = useDispatch();
-  const cartItems=useSelector((state)=>state.cart.cartItems);
+  const cartItems=useSelector((state)=>state.cart?.cartItems??[]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -33,7 +33,7 @@ const ProductDetail = () => {
     // User login check
     if(!product) return;
     const stock=Number(product.stock)||0;
-    const existingItem=cartItems.find((item)=>item._id===product._id);
+    const existingItem=(Array.isArray(cartItems)?cartItems:[]).find((item)=>item._id===product._id);
     const currentQty=Number(existingItem?.qty)||0;
     if(currentQty>=stock){
       alert("Not enough stock available");

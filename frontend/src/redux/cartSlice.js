@@ -7,33 +7,59 @@ const getCartKey = () => {
 };
 
 const loadCartItems = () => {
-  const cart = localStorage.getItem(getCartKey());
-  return cart ? JSON.parse(cart) : [];
-};
-export const mergeGuestCart=async(userData)=>{
-  const userId=userData?._id;
-  if(!userId) throw new Error("user id missing");
-  const guestKey="cartItems_guest";
-  const userKey=`cartItems_${userId}`;
-  const guestCart=JSON.parse(localStorage.getItem(guestKey)||"[]");
-  const userCart=JSON.parse(localStorage.getItem(userKey)||"[]");
-  const merged=[...userCart];
-  for(const item of guestCart){
-    const index=merged.findIndex((p)=>p._id===item._id);
-    if(index>=0){
-      merged[index].qty=Math.min(
-        Number(merged[index].qty||0)+Number(item.qty||0),Number(item.stock??Infinity)
-      );
+  try{
+    const cart = localStorage.getItem(getCartKey());
+    const items=cart ? JSON.parse(cart) : [];
 
-    }
-    else{
-      merged.push({...item});
-    }
-  }
-  localStorage.setItem(userKey,JSON.stringify(merged));
-  localStorage.removeItem(guestKey);
-  return merged;
+    return Array.isArray(items)?items:[];
+  } catch (error){
+    console.error("cart loading error:",error);
+    return [];
+  }    
 };
+
+export const mergeGuestCart = async (userData, reduxCart = []) => {
+    const userId = userData?._id;
+    if (!userId) throw new Error("User ID missing");
+
+    const guestKey = "cartItems_guest";
+    const userKey = `cartItems_${userId}`;
+
+    const readCart = (key) => {
+      try {
+        const items = JSON.parse(localStorage.getItem(key) || "[]");
+        return Array.isArray(items) ? items : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const storedGuestCart = readCart(guestKey);
+    const guestCart = storedGuestCart.length > 0? storedGuestCart: !localStorage.getItem("userInfo") && Array.isArray(reduxCart)? reduxCart: [];
+    const userCart = readCart(userKey);
+    const merged = new Map();
+    for (const item of [...userCart, ...guestCart]) {
+      if (!item?._id) continue;
+      const id = String(item._id);
+      const existing = merged.get(id);
+      const quantity = Math.max(0,Math.floor(Number(item.qty) || 0));
+      const stock = Number(item.stock);
+      const limit = Number.isFinite(stock)? Math.max(0, stock):Infinity;
+      if (existing) {
+        existing.qty = Math.min(existing.qty + quantity,limit);
+      } else {
+        merged.set(id, {
+          ...item,
+          qty: Math.min(quantity, limit)});
+      }
+    }
+    const finalCart = [...merged.values()].filter((item) => item.qty > 0);
+    localStorage.setItem(userKey,JSON.stringify(finalCart));
+    localStorage.removeItem(guestKey);
+    return finalCart;
+  };
+                                                                                                          
+
 const initialState = {
   cartItems: loadCartItems(),
 };
@@ -45,7 +71,11 @@ const cartSlice = createSlice({
   reducers: {
     // Login/Logout ke baad correct cart load karega
     loadCart: (state) => {
-      state.cartItems = loadCartItems();
+      const items = loadCartItems();
+      state.cartItems=Array.isArray(items)?items:[];
+    },
+    setCartItems:(state,action)=>{
+      state.cartItems=action.payload;
     },
 
     addToCart: (state, action) => {
@@ -101,6 +131,7 @@ export const {
   removeFromCart,
   clearCart,
   loadCart,
+  setCartItems,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

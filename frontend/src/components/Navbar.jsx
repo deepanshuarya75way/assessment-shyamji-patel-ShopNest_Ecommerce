@@ -6,7 +6,9 @@ import "../styles/navbar.css";
 
 const Navbar = () => {
   const {user, logout} = useContext(AuthContext);
-  const cartItems =useSelector((state) => state.cart.cartItems);
+  const cartItems =useSelector((state) => state.cart?.cartItems);
+  
+  
   const navigate = useNavigate();
 
   const handleLogout = () =>{
@@ -22,7 +24,7 @@ const Navbar = () => {
       </div>
       <ul className="navbar-links">
         <li><Link to="/shop">Shop</Link></li>
-        <li><Link to ="/cart">Cart({cartItems.length})</Link></li>
+        <li><Link to ="/cart">Cart({cartItems?.length??0})</Link></li>
         
         {user ? (
           <>
