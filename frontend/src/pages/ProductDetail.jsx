@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useDispatch,useSelector } from 'react-redux';
 import { addToCart } from '../redux/cartSlice';
-import { AuthContext } from '../context/AuthContext';
+
 import '../styles/product.css';
 
 const ProductDetail = () => {
@@ -11,8 +11,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
 
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const cartItems=useSelector((state)=>state.cart.cartItems);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -32,25 +31,26 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     // User login check
-    if (!user) {
-      alert("Please login first to add products to your cart.");
-      navigate("/login");
+    if(!product) return;
+    const stock=Number(product.stock)||0;
+    const existingItem=cartItems.find((item)=>item._id===product._id);
+    const currentQty=Number(existingItem?.qty)||0;
+    if(currentQty>=stock){
+      alert("Not enough stock available");
       return;
     }
+    dispatch(
+      addToCart({
+        _id:product._id,
+        name:product.name,
+        price:product.price,
+        imageUrl:product.imageUrl,
+        stock:stock,
+        qty:currentQty+1
+      })
+    );
+    alert("product added to cart successfully!");
 
-    if (product) {
-      dispatch(
-        addToCart({
-          _id: product._id,
-          name: product.name,
-          price: product.price,
-          imageUrl: product.imageUrl,
-          qty: 1,
-        })
-      );
-
-      alert("Successfully added to your cart!");
-    }
   };
 
   if (loading)

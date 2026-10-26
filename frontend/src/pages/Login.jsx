@@ -34,7 +34,7 @@ const Login = () => {
         throw new Error(data.message || 'Login failed');
       }
 
-      login(data);
+      await login(data);
       navigate('/');
     } catch (err) {
       setError(err.message);

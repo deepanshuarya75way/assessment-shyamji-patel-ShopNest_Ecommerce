@@ -2,15 +2,38 @@ import { createSlice } from '@reduxjs/toolkit';
 
 // User-wise localStorage key
 const getCartKey = () => {
-  const user = JSON.parse(localStorage.getItem('userInfo'));
-  return user ? `cartItems_${user._id}` : 'cartItems_guest';
+  const user = JSON.parse(localStorage.getItem('userInfo')||null);
+  return user?._id?`cartItems_&{user._id}`:"cartItems_guest";
 };
 
 const loadCartItems = () => {
   const cart = localStorage.getItem(getCartKey());
   return cart ? JSON.parse(cart) : [];
 };
+export const mergeGuestCart=async(userData)=>{
+  const userId=userData?._id;
+  if(!userId) throw new Error("user id missing");
+  const guestKey="cartItems_guest";
+  const userKey=`cartItems_${userId}`;
+  const guestCart=JSON.parse(localStorage.getItem(guestKey)||"[]");
+  const userCart=JSON.parse(localStorage.getItem(userKey)||"[]");
+  const merged=[...userCart];
+  for(const item of guestCart){
+    const index=merged.findIndex((p)=>p._id===item._id);
+    if(index>=0){
+      merged[index].qty=Math.min(
+        Number(merged[index].qty||0)+Number(item.qty||0),Number(item.stock??Infinity)
+      );
 
+    }
+    else{
+      merged.push({...item});
+    }
+  }
+  localStorage.setItem(userKey,JSON.stringify(merged));
+  localStorage.removeItem(guestKey);
+  return merged;
+};
 const initialState = {
   cartItems: loadCartItems(),
 };

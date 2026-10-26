@@ -14,9 +14,14 @@ const Cart = () => {
   };
 
   const handleUpdateQty = (item, qty) => {
-    if (qty > 0) {
-      dispatch(addToCart({ ...item, qty }));
+    if(qty<=0) return;
+    const stock=Number(item.stock);
+    if(Number.isFinite(stock)&&qty>stock){
+      alert(`only ${stock}item available`);
+      return;
     }
+    dispatch(addToCart({...item,qty}));
+
   };
 
   const totalPrice = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);

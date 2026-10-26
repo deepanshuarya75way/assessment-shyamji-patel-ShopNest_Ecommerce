@@ -28,7 +28,7 @@ const VerifyOtp = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        login(data);
+        await login(data);
         navigate('/');
       } else {
         setError(data.message || 'Verification failed');
